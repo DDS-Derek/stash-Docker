@@ -1,0 +1,76 @@
+name: Build Stash Docker
+
+on:
+    workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Stash Docker
+    runs-on: ubuntu-latest
+    steps:
+      - 
+        name: Checkout
+        uses: actions/checkout@master
+      
+      - name: Set Version
+        id: set-version
+        run: |
+          echo "::set-output name=version::${GITHUB_REF:10}"
+
+      - 
+        name: Set Up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - 
+        name: Set Up Buildx
+        uses: docker/setup-buildx-action@v2
+        
+      - 
+        name: Login DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - 
+        name: Build
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: Dockerfile
+          platforms: |
+            linux/amd64
+            linux/arm64/v8
+            linux/arm/v7
+          push: true
+          build-args: |
+            STASH_VERSION=${{ steps.set-version.outputs.version }}
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/stash:${{ steps.set-version.outputs.version }}
+            ${{ secrets.DOCKER_USERNAME }}/stash:latest
+
+  update:
+    needs: [build]
+    name: Update Dockerhub Docs
+    runs-on: ubuntu-latest
+    steps:
+      - 
+        name: Checkout
+        uses: actions/checkout@master
+        
+      - 
+        name: Login DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      -
+        name: Docker Hub Description
+        uses: peter-evans/dockerhub-description@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: ${{ secrets.DOCKER_USERNAME }}/stash
+          short-description: Stash Docker image that supports PUID, PGID, Umask settings
+          readme-filepath: ./README.md
