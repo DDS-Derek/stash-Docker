@@ -15,6 +15,7 @@ RUN apk add --no-cache \
         ffmpeg \
         bash \
         su-exec \
+        dumb-init \
     && \
     if [ "$(uname -m)" = "x86_64" ]; then ARCH="linux"; elif [ "$(uname -m)" = "aarch64" ]; then ARCH="linux-arm64v8"; elif [ "$(uname -m)" = "armv7l" ]; then ARCH="linux-arm32v7"; fi && \
     wget \
